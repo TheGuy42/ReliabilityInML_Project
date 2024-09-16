@@ -1,0 +1,28 @@
+# first install gpu support: 
+# GPU version: conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
+# CPU version: conda install pytorch torchvision torchaudio cpuonly -c pytorch
+
+# new env: conda env create -f requirements.yaml
+# update env: conda env update -f requirements.yaml
+
+# name: rel
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - tqdm
+  - numpy
+  - pandas
+  - matplotlib
+  - seaborn>=0.13
+  - ipywidgets
+  # - ultralytics
+  - pip
+  - ipykernel
+  # - opencv
+  - tensorboard
+  - pyqt
+  - lightning
+  - pip:
+    - confseq
+    # - portray
