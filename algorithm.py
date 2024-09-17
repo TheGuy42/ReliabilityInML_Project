@@ -108,11 +108,31 @@ class ConfSeq:
 class Hypothesis:
     def __init__(self, tolerance:float, lower_bound:ConfSeq, upper_bound:ConfSeq):
         self.tolerance = tolerance
-        self.lower_bound = lower_bound
-        self.upper_bound = upper_bound
+        self.target_bound:ConfSeq = lower_bound
+        self.source_bound:ConfSeq = upper_bound
+
+        self.source_upper_cs = None
+        self.target_lower_cs = None
         pass
 
-    def __call__(self, x:np.ndarray) -> bool:
+    def calc_source_upper_cs(self, x:np.ndarray) -> np.ndarray:
+        assert self.source_upper_cs is None, "Source upper bound was already calculated"
+        self.source_upper_cs = self.source_bound.update(x)[1]
+        return self.source_upper_cs
+
+    def calc_target_lower_cs(self, x:np.ndarray) -> np.ndarray:
+        self.target_lower_cs = self.target_bound.update(x)[0]
+        return self.target_lower_cs
+
+    @property
+    def source_upper(self) -> np.ndarray:
+        raise NotImplementedError("Hypothesis class must implement source_upper property")
+    
+    @property
+    def target_lower(self) -> np.ndarray:
+        raise NotImplementedError("Hypothesis class must implement target_lower property")
+    
+    def test(self, x:np.ndarray) -> bool:
         """
         Given a new input x, update the bounds and return weather the hypothesis is satisfied (within the tolerance).
         Parameters:
@@ -120,7 +140,42 @@ class Hypothesis:
         Returns:
             bool: The result of the function call.
         """
-        raise NotImplementedError("Hypothesis class must implement __call__ method")
+        self.calc_target_lower_cs(x)
+        if self.target_lower[-1] > self.source_upper:
+            return False
+        return True
+    
+    def to_dataframe(self) -> pd.DataFrame:
+        df = pd.DataFrame(columns=["data", "source_lower_ci", "source_upper_ci", "target_lower_ci", "target_upper_ci"])
+        length = self.target_bound._risk_seq.shape[0]
+        df['time'] = np.arange(length)
+        df["data"] = self.target_bound._risk_seq
+        df["source_upper_bound"] = self.source_upper
+        df["target_lower_cs"] = self.target_lower
+
+        return df
+    
+    def plot(self):
+        fig, axes = plt.subplots(1, 1, figsize=(12, 6))
+        fig.set_dpi(200)
+
+        df = self.to_dataframe()
+
+        # g = sns.relplot(data=df, x='time', y=df.columns, hue=df.columns, ax=axes)
+        g = sns.lineplot(data=df, x='time', y='data', ax=axes, label='Risk Sequence')
+        g.fill_between(df['time'], df['target_lower_cs'], df['source_upper_bound'], alpha=0.35, color='red', label='Confidence Interval', zorder=10)
+        g.set_title(f"Confidence Interval; Tolerance Level: {self.tolerance}; Coverage: {self.coverage()}")
+        g.set_xlabel("Time")
+        g.set_ylabel("Risk")
+        g.legend()
+        plt.show()
+
+    def coverage(self) -> float:
+        """
+        Calculate the coverage of the confidence interval.
+        """
+        risk_seq = self.target_bound._risk_seq
+        return np.mean((self.target_lower <= risk_seq) & (risk_seq <= self.source_upper))
 
 
 class Algorithm:
