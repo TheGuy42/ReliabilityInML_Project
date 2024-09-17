@@ -9,9 +9,9 @@
 channels:
   - conda-forge
 dependencies:
-  - python=3.12
+  # - python=3.12
   - tqdm
-  - numpy
+  - numpy=1.24.1
   - pandas
   - matplotlib
   - seaborn>=0.13
@@ -24,5 +24,5 @@ dependencies:
   - pyqt
   - lightning
   - pip:
-    - confseq
+    # - confseq
     # - portray
