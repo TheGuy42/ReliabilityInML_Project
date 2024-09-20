@@ -163,7 +163,16 @@ class Hypothesis:
 
         # g = sns.relplot(data=df, x='time', y=df.columns, hue=df.columns, ax=axes)
         g = sns.lineplot(data=df, x='time', y='data', ax=axes, label='Risk Sequence')
-        g.fill_between(df['time'], df['target_lower_cs'], df['source_upper_bound'], alpha=0.35, color='red', label='Confidence Interval', zorder=10)
+
+        diff =  (df['target_lower_cs'] - df['source_upper_bound'])
+        g.fill_between(df['time'], df['target_lower_cs'], df['source_upper_bound'], where=diff > 0, alpha=0.35, color='green', label='Confidence Interval - H rejected', zorder=10)
+        g.fill_between(df['time'], df['target_lower_cs'], df['source_upper_bound'], where=diff < 0, alpha=0.35, color='red', label='Confidence Interval - H holds', zorder=10)
+        
+        emp_source_mean = self.source_bound._risk_seq.mean()
+        emp_target_mean = self.target_bound._risk_seq.mean()
+        g.hlines(emp_source_mean, 0, df['time'].max(), color='black', label='Empirical Source Mean', zorder=10, linestyle='--')
+        g.hlines(emp_target_mean, 0, df['time'].max(), color='black', label='Empirical Target Mean', zorder=10, linestyle='-.')
+
         g.set_title(f"Confidence Interval; Tolerance Level: {self.tolerance}; Coverage: {self.coverage()}")
         g.set_xlabel("Time")
         g.set_ylabel("Risk")
