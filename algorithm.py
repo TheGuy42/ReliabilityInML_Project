@@ -27,13 +27,15 @@ class ConfSeq:
     """
     This is a base class that represents a bound function.
     """
-    def __init__(self, confidence:float, bound_name:str=None):
+    def __init__(self, confidence:float, bound_name:str=None, min_val:float=None, max_val:float=None):
         self.name = bound_name if bound_name is not None else self.__class__.__name__
         self.conf_lvl = confidence
+        self.min_val = min_val if min_val is not None else -np.inf
+        self.max_val = max_val if max_val is not None else np.inf
 
-        self._risk_seq:np.ndarray = np.ndarray([]).reshape(1)
-        self._lower_cs:np.ndarray = np.ndarray([]).reshape(1)
-        self._upper_cs:np.ndarray = np.ndarray([]).reshape(1)
+        self._risk_seq:np.ndarray = None# np.ndarray([]).reshape(1)
+        self._lower_cs:np.ndarray = None# np.ndarray([]).reshape(1)
+        self._upper_cs:np.ndarray = None# np.ndarray([]).reshape(1)
 
     def calculate_cs(self, x:np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """
@@ -45,9 +47,18 @@ class ConfSeq:
         """
         update the confidence interval bounds given a new input x.
         """
+        assert all(x >= self.min_val) and all(x <= self.max_val), f"Input x must be in the range [{self.min_val}, {self.max_val}]"
+        
         self._risk_seq = self._append_seq(x, self._risk_seq)
 
-        self._lower_cs, self._upper_cs = self.calculate_cs(self._risk_seq)
+        max_val = self.max_val if np.isfinite(self.max_val) else self._risk_seq.max()
+        min_val = self.min_val if np.isfinite(self.min_val) else self._risk_seq.min()        
+
+        normalized = (self._risk_seq - min_val) / (max_val - min_val)
+        lower_cs, higher_cs = self.calculate_cs(normalized)
+
+        self._lower_cs = lower_cs * (max_val - min_val) + min_val
+        self._upper_cs = higher_cs * (max_val - min_val) + min_val
 
         return self.lower, self.upper
     
@@ -60,10 +71,11 @@ class ConfSeq:
         """
         if isinstance(x, float):
             x = np.ndarray([x])
-        # print(seq.shape, x.shape)
-        new_seq = np.concatenate((seq, x), axis=0)
-        # new_seq = np.stack((seq.copy(), x), axis=0)
+        
+        if seq is None:
+            return x.reshape(-1)
 
+        new_seq = np.concatenate((seq, x), axis=0)
         return new_seq
 
     @property
@@ -146,7 +158,7 @@ class Hypothesis:
         return True
     
     def to_dataframe(self) -> pd.DataFrame:
-        df = pd.DataFrame(columns=["data", "source_lower_ci", "source_upper_ci", "target_lower_ci", "target_upper_ci"])
+        df = pd.DataFrame(columns=["data", "source_upper_bound", "target_lower_cs"])
         length = self.target_bound._risk_seq.shape[0]
         df['time'] = np.arange(length)
         df["data"] = self.target_bound._risk_seq
@@ -169,11 +181,11 @@ class Hypothesis:
         g.fill_between(df['time'], df['target_lower_cs'], df['source_upper_bound'], where=diff < 0, alpha=0.35, color='red', label='Confidence Interval - H holds', zorder=10)
         
         emp_source_mean = self.source_bound._risk_seq.mean()
-        emp_target_mean = self.target_bound._risk_seq.mean()
-        g.hlines(emp_source_mean, 0, df['time'].max(), color='black', label='Empirical Source Mean', zorder=10, linestyle='--')
-        g.hlines(emp_target_mean, 0, df['time'].max(), color='black', label='Empirical Target Mean', zorder=10, linestyle='-.')
+        emp_target_mean = self.target_bound._risk_seq.cumsum() / np.arange(1, self.target_bound._risk_seq.shape[0]+1)
+        sns.lineplot(x=df['time'], y=emp_target_mean, color='black', label='Empirical Target Mean', zorder=10, linestyle='--', ax=axes)
+        g.hlines(emp_source_mean, 0, df['time'].max(), color='black', label='Empirical Source Mean', zorder=10, linestyle='-.')
 
-        g.set_title(f"Confidence Interval; Tolerance Level: {self.tolerance}; Coverage: {self.coverage()}")
+        g.set_title(f"Confidence Interval; Tolerance Level: {self.tolerance}")
         g.set_xlabel("Time")
         g.set_ylabel("Risk")
         g.legend()
