@@ -12,16 +12,16 @@ import pandas as pd
 # from neural.module import LightningModel
 
 
-class Risk:
-    """Risk
-    This is a base class that represents a risk function.
-    """
-    def __init__(self):
-        pass
+# class Risk:
+#     """Risk
+#     This is a base class that represents a risk function.
+#     """
+#     def __init__(self):
+#         pass
 
-    @property
-    def value(self):
-        pass
+#     @property
+#     def value(self):
+#         pass
 
 class ConfSeq:
     """
