@@ -23,8 +23,6 @@ class Risk:
         raise NotImplementedError("Risk class must implement a __call__ method")
 
 
-
-
 class MSE(Risk):
     def __init__(self):
         super().__init__()
