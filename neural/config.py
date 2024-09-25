@@ -49,8 +49,8 @@ class ExperimentConfig(ConfigBase):
 @dataclass
 class TrainConfig(ConfigBase):
     # trainer parameters
-    loss_fn: str  # The loss function to use, can be any of the keys in the LOSSES dict
-    optimizer: str  # The optimizer to use, can be any of the keys in the OPTIMIZERS dict
+    # loss_fn: str  # The loss function to use, can be any of the keys in the LOSSES dict
+    # optimizer: str  # The optimizer to use, can be any of the keys in the OPTIMIZERS dict
     device: str = "cuda"  # 'cuda' for training on GPU or 'cpu' otherwise
     log: bool = False  # Whether to log and save the training process with tensorboard
     logs_dir: str = "logs/"  # The directory to save the logs and checkpoints
@@ -62,15 +62,15 @@ class TrainConfig(ConfigBase):
     log_every: int = 5  # How often (#epochs) to print training progress
     timeout: str|None = None  # Maximum time (in seconds) to train the model, if None, it will train for num_epochs epochs
 
-    # optimizer parameters
-    learning_rate: float = 0.001  # Learning rate for the optimizer
-    weight_decay: float = 1e-5 # Weight decay for the optimizer (regularization, values typically in range [0.0, 1e-4] but can be bigger)
+    # # optimizer parameters
+    # learning_rate: float = 0.001  # Learning rate for the optimizer
+    # weight_decay: float = 1e-5 # Weight decay for the optimizer (regularization, values typically in range [0.0, 1e-4] but can be bigger)
 
     # dataloader parameters
     batch_size: int = 256  # Number of samples in each batch
     shuffle: bool = True  # Whether to shuffle the dataset at the beginning of each epoch
     num_workers: int = 0  # Number of subprocesses to use for data loading
-    train_test_split: float = 0.8  # Fraction of the dataset to use for training, the rest will be used for testing
+    # train_test_split: float = 0.8  # Fraction of the dataset to use for training, the rest will be used for testing
 
 
 

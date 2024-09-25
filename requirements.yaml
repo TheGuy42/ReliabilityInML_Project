@@ -10,8 +10,8 @@ channels:
   - conda-forge
 dependencies:
   # - python=3.12
-  - tqdm
-  - numpy=1.24.1
+  # - tqdm
+  # - numpy=1.24.1
   - pandas
   - matplotlib
   - seaborn>=0.13
@@ -20,9 +20,10 @@ dependencies:
   - pip
   - ipykernel
   - tensorboard
-  - pyqt
-  - lightning
+  # - pyqt
+  - wandb
+  # - lightning
   - pip:
-    # - confseq
-    # - wilds
+    - confseq
+    - wilds
     # - portray

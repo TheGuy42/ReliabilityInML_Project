@@ -48,6 +48,7 @@ class MLPLayer(nn.Module):
         # return self.mlp_layer.forward(x.reshape(x.size(0), -1))
         # return self.mlp_layer.forward(x)
         # shape = x.shape
+        # print(x.dtype)
         res = self.mlp_layer.forward(x)
         # res = res.reshape(shape)
         return res
@@ -109,6 +110,7 @@ class RMLP(nn.Module):
         block_nonlins: Sequence[Union[str, nn.Module]],
         n_blocks: int,
         out_dim: int,
+        out_nonlin: Union[str, nn.Module],
         in_dim: int = None,  # if in_dim is an int, then a first layer will be made
         batch_norm: bool = False,
     ) -> None:
@@ -126,7 +128,8 @@ class RMLP(nn.Module):
 
         self.blocks = nn.ModuleList(layers)
         # Create output layer
-        self.output = nn.Linear(block_dims[-1], out_dim)
+        # self.output = nn.Linear(block_dims[-1], out_dim)
+        self.output = MLPLayer(block_dims[-1], out_dim, out_nonlin, False)
 
     def _make_activation(self, act: Union[str, nn.Module]) -> nn.Module:
         if isinstance(act, str):

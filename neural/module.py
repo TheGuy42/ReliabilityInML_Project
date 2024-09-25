@@ -153,7 +153,8 @@ class LightningWrapper(LightningModule):
 
         self.timer.start("train_epoch")
         if self.lr_schedulers() is not None:
-            self.logger.log_metrics({"lr": self.lr_schedulers().get_last_lr()[0]}, step=self.current_epoch)
+            lr = self.optimizers().param_groups[0]["lr"]
+            self.logger.log_metrics({"lr": lr}, step=self.current_epoch)
             # self.logger.log_metrics({"lr2": self.logger['lr']}, step=self.current_epoch)
 
     def on_train_epoch_end(self):

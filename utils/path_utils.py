@@ -49,7 +49,7 @@ def create_parent_directory(file_path: str):
     save_folder.mkdir(parents=True, exist_ok=True)
 
 
-def create_directory(dir_path: str):
+def create_directory(dir_path: str, exist_ok: bool = False):
     """
     Create a directory at the specified path if it doesn't already exist.
 
@@ -59,7 +59,7 @@ def create_directory(dir_path: str):
     Returns:
         None
     """
-    Path(dir_path).mkdir(parents=True, exist_ok=True)
+    Path(dir_path).mkdir(parents=True, exist_ok=exist_ok)
 
 
 def bulk_rename(dir_path: str, rename_fn: Callable[[str], str]):
@@ -112,6 +112,16 @@ class Files:
         self._pos = -1
 
         self._scan()
+
+    @property
+    def current_entry(self) -> os.DirEntry:
+        """
+        Returns the current file entry.
+
+        Returns:
+            os.DirEntry: The current file entry.
+        """
+        return self.results[self._pos]
 
     def _scan(self):
         self.results = []
@@ -226,11 +236,22 @@ class Files:
         self._pos = pos - 1
         return self.__next__()
 
-    def copy(self, dst_root: str) -> None:
+    def copy(self, dst_path: str) -> None:
         """
         Copies the current file to the specified destination directory.
 
         Args:
             dst_root (str): The destination directory path.
         """
-        shutil.copy2(self.get_path(), dst=dst_root)
+        shutil.copy2(self.get_path(), dst=dst_path)
+
+    def symlink(self, dst_path: str) -> None:
+        """
+        Creates a symbolic link to the current file in the specified destination directory.
+
+        Args:
+            dst_root (str): The destination directory path.
+        """
+        is_dir = self.current_entry.is_dir()
+        os.symlink(self.get_path(), dst_path, target_is_directory=is_dir)
+
