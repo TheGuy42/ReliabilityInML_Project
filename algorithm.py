@@ -27,7 +27,7 @@ class ConfSeq:
     """
     This is a base class that represents a bound function.
     """
-    def __init__(self, confidence:float, bound_name:str=None, min_val:float=None, max_val:float=None):
+    def __init__(self, confidence:float, min_val:float=None, max_val:float=None, bound_name:str=None):
         self.name = bound_name if bound_name is not None else self.__class__.__name__
         self.conf_lvl = confidence
         self.min_val = min_val if min_val is not None else -np.inf
@@ -47,6 +47,8 @@ class ConfSeq:
         """
         update the confidence interval bounds given a new input x.
         """
+        if isinstance(x, float):
+            x = np.asanyarray([x])
         assert all(x >= self.min_val) and all(x <= self.max_val), f"Input x must be in the range [{self.min_val}, {self.max_val}]"
         
         self._risk_seq = self._append_seq(x, self._risk_seq)
@@ -70,7 +72,7 @@ class ConfSeq:
             seq (np.ndarray): The sequence to append to.
         """
         if isinstance(x, float):
-            x = np.ndarray([x])
+            x = np.asanyarray([x])
         
         if seq is None:
             return x.reshape(-1)
@@ -87,9 +89,9 @@ class ConfSeq:
         return self._upper_cs
     
     def to_dataframe(self):
-        df = pd.DataFrame(columns=["data", "lower_ci", "upper_ci"])
+        df = pd.DataFrame(columns=["risk_seq", "lower_ci", "upper_ci"])
         df['time'] = np.arange(self._risk_seq.shape[0])
-        df["data"] = self._risk_seq
+        df["risk_seq"] = self._risk_seq
         df["lower_ci"] = self._lower_cs
         df["upper_ci"] = self._upper_cs
         return df
@@ -101,7 +103,7 @@ class ConfSeq:
         df = self.to_dataframe()
 
         # g = sns.relplot(data=df, x='time', y=df.columns, hue=df.columns, ax=axes)
-        g = sns.lineplot(data=df, x='time', y='data', ax=axes, label='Risk Sequence')
+        g = sns.lineplot(data=df, x='time', y='risk_seq', ax=axes, label='Risk Sequence')
         g.fill_between(df['time'], df['lower_ci'], df['upper_ci'], alpha=0.35, color='red', label='Confidence Interval', zorder=10)
         g.set_title(f"{self.name} Confidence Interval; Confidence Level: {self.conf_lvl}; Coverage: {self.coverage()}")
         g.set_xlabel("Time")
@@ -114,6 +116,11 @@ class ConfSeq:
         Calculate the coverage of the confidence interval.
         """
         return np.mean((self.lower <= self._risk_seq) & (self._risk_seq <= self.upper))
+    
+    def reset(self):
+        self._risk_seq = None
+        self._lower_cs = None
+        self._upper_cs = None
     
 
 
@@ -158,10 +165,12 @@ class Hypothesis:
         return True
     
     def to_dataframe(self) -> pd.DataFrame:
-        df = pd.DataFrame(columns=["data", "source_upper_bound", "target_lower_cs"])
+        df = pd.DataFrame(columns=["risk_seq", "source_upper_bound", "target_lower_cs"])
         length = self.target_bound._risk_seq.shape[0]
         df['time'] = np.arange(length)
-        df["data"] = self.target_bound._risk_seq
+        df["risk_seq"] = self.target_bound._risk_seq
+        df['empirical_target_mean'] = self.target_bound._risk_seq.cumsum() / np.arange(1, length+1)
+        df['emp_source_mean'] = self.source_bound._risk_seq.mean()
         df["source_upper_bound"] = self.source_upper
         df["target_lower_cs"] = self.target_lower
         df["tol"] = self.tolerance
@@ -176,14 +185,14 @@ class Hypothesis:
 
         return df
     
-    def plot(self):
+    def plot(self) -> plt.Axes:
         fig, axes = plt.subplots(1, 1, figsize=(12, 6))
         fig.set_dpi(200)
 
         df = self.to_dataframe()
 
         # g = sns.relplot(data=df, x='time', y=df.columns, hue=df.columns, ax=axes)
-        g = sns.lineplot(data=df, x='time', y='data', ax=axes, label='Risk Sequence')
+        g = sns.lineplot(data=df, x='time', y='risk_seq', ax=axes, label='Risk Sequence')
 
         diff =  (df['target_lower_cs'] - df['source_upper_bound'])
         g.fill_between(df['time'], df['target_lower_cs'], df['source_upper_bound'], where=diff > 0, alpha=0.35, color='green', label='Confidence Interval - H rejected', zorder=10)
@@ -199,6 +208,7 @@ class Hypothesis:
         g.set_ylabel("Risk")
         g.legend()
         plt.show()
+        return g
 
     def coverage(self) -> float:
         """
@@ -206,6 +216,14 @@ class Hypothesis:
         """
         risk_seq = self.target_bound._risk_seq
         return np.mean((self.target_lower <= risk_seq) & (risk_seq <= self.source_upper))
+
+    def reset(self, source:bool=True, target:bool=True):
+        if source:
+            self.source_bound.reset()
+            self.source_upper_cs = None
+        if target:
+            self.target_bound.reset()
+            self.target_lower_cs = None
 
 
 class Algorithm:

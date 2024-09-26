@@ -27,7 +27,7 @@ class MSE(Risk):
         super().__init__()
 
     def __call__(self, features:np.ndarray, preds: np.ndarray, labels: np.ndarray) -> np.ndarray:
-        return torch.mean((preds - labels) ** 2)
+        return np.mean((preds - labels) ** 2)
     
 
 class MAE(Risk):
@@ -35,7 +35,7 @@ class MAE(Risk):
         super().__init__()
 
     def __call__(self, features:np.ndarray, preds: np.ndarray, labels: np.ndarray) -> np.ndarray:
-        return torch.mean(torch.abs(preds - labels))
+        return np.mean(np.abs(preds - labels))
     
 
 class Quantile(Risk):
@@ -51,8 +51,8 @@ class Quantile(Risk):
         
         @return: The quantile loss.
         """
-        res = torch.max(self.q * (labels - preds), (self.q - 1) * (labels - preds))
-        return torch.mean(res)
+        res = np.max(self.q * (labels - preds), (self.q - 1) * (labels - preds))
+        return np.mean(res)
 
 
 class RiskFilter(Risk):
