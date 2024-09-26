@@ -51,7 +51,7 @@ class Quantile(Risk):
         
         @return: The quantile loss.
         """
-        res = np.max(self.q * (labels - preds), (self.q - 1) * (labels - preds))
+        res = np.maximum(self.q * (labels - preds), (self.q - 1) * (labels - preds))
         return np.mean(res)
 
 

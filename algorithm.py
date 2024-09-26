@@ -54,7 +54,9 @@ class ConfSeq:
         self._risk_seq = self._append_seq(x, self._risk_seq)
 
         max_val = self.max_val if np.isfinite(self.max_val) else self._risk_seq.max()
-        min_val = self.min_val if np.isfinite(self.min_val) else self._risk_seq.min()        
+        min_val = self.min_val if np.isfinite(self.min_val) else self._risk_seq.min()
+        if max_val == min_val:
+            max_val += 1
 
         normalized = (self._risk_seq - min_val) / (max_val - min_val)
         lower_cs, higher_cs = self.calculate_cs(normalized)
@@ -203,11 +205,11 @@ class Hypothesis:
         sns.lineplot(x=df['time'], y=emp_target_mean, color='black', label='Empirical Target Mean', zorder=10, linestyle='--', ax=axes)
         g.hlines(emp_source_mean, 0, df['time'].max(), color='black', label='Empirical Source Mean', zorder=10, linestyle='-.')
 
-        g.set_title(f"Confidence Interval; Tolerance Level: {self.tolerance}")
+        # g.set_title(f"Confidence Interval; Tolerance Level: {self.tolerance}")
         g.set_xlabel("Time")
         g.set_ylabel("Risk")
         g.legend()
-        plt.show()
+        # plt.show()
         return g
 
     def coverage(self) -> float:
