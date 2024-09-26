@@ -76,7 +76,7 @@ class DataPrep:
     
 
 class EnergyDataset(Dataset):
-    feature_cols = ['Region', 'Year', 'Day', 'Hour', 'Week_Number', 'Season']
+    feature_cols = ['Region', 'Year', 'Day', 'Hour', 'Week_Number', 'Season'] # columns after DataPrep(), additional features may be added here
     target_col = 'MW'
 
     def __init__(self, 
@@ -90,8 +90,8 @@ class EnergyDataset(Dataset):
         self.data = None
         self.labels = None
 
-        self.data_df = None
-        self.labels_df = None
+        self.features_df:pd.DataFrame = None
+        self.labels_df:pd.DataFrame = None
         self.prepare_data(transform=transform)
 
     def prepare_data(self,
@@ -121,15 +121,12 @@ class EnergyDataset(Dataset):
         #         mask = condition(data)
 
         # apply the condition to a copy of the features and labels dataframes and save the results
-        print(mask.shape)
-        print(features.shape)
-        print(labels.shape)
-        self.data_df = features[mask].copy().reset_index(drop=True)
+        self.features_df = features[mask].copy().reset_index(drop=True)
         self.labels_df = labels[mask].copy().reset_index(drop=True)
         
         # Convert the dataframes to tensors and apply the condition and transform functions
-        self.data = self.to_tensor(features, condition=mask, transform=transform)
-        self.labels = self.to_tensor(labels, condition=mask, transform=transform)
+        self.data = self.to_numpy(self.features_df)
+        self.labels = self.to_numpy(self.labels_df)
 
         # self.data, self.labels = self.transform_to_sequence(self.data, self.labels)
 
@@ -155,10 +152,10 @@ class EnergyDataset(Dataset):
         return self.data[idx], self.labels[idx]
 
     @staticmethod
-    def to_tensor(data: pd.DataFrame,
+    def to_numpy(data: pd.DataFrame,
                   condition: pd.DataFrame | Callable[[pd.DataFrame], pd.DataFrame] = None,
                   transform: Callable[[pd.DataFrame], pd.DataFrame] = None,
-                  ) -> torch.Tensor:
+                  ) -> np.ndarray:
         
         if transform is not None:
             data = transform(data)
@@ -170,7 +167,8 @@ class EnergyDataset(Dataset):
                 data = data[condition(data)]
 
         data = data.to_numpy(dtype=np.float32, copy=True)
-        return torch.from_numpy(data)
+        return data
+        # return torch.from_numpy(data)
 
 
 
