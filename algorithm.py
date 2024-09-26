@@ -164,6 +164,15 @@ class Hypothesis:
         df["data"] = self.target_bound._risk_seq
         df["source_upper_bound"] = self.source_upper
         df["target_lower_cs"] = self.target_lower
+        df["tol"] = self.tolerance
+        df["rejected"] = ((df['target_lower_cs'] - df['source_upper_bound']) > 0).astype(bool)
+        # source bound
+        df['source_bound'] = self.source_bound.name
+        df['source_confidence'] = self.source_bound.conf_lvl
+        # target bound
+        df['target_bound'] = self.target_bound.name
+        df['target_confidence'] = self.target_bound.conf_lvl
+
 
         return df
     
@@ -214,8 +223,6 @@ class Algorithm:
     def update(self, x:np.ndarray) -> bool:
         pass
 
-    def __str__(self):
-        return f"Algorithm: risk - {self.risk} and hypothesis - {self.hypothesis}"
 
 
 

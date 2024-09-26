@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 
-# from neural.module import LightningModel
 
 
 class Risk:
@@ -19,7 +18,7 @@ class Risk:
     def __init__(self):
         pass
 
-    def __call__(self, *args, **kwargs) -> torch.Tensor | np.ndarray:
+    def __call__(self, features:np.ndarray, preds: np.ndarray, labels: np.ndarray) -> np.ndarray:
         raise NotImplementedError("Risk class must implement a __call__ method")
 
 
@@ -27,7 +26,7 @@ class MSE(Risk):
     def __init__(self):
         super().__init__()
 
-    def __call__(self, preds: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
+    def __call__(self, features:np.ndarray, preds: np.ndarray, labels: np.ndarray) -> np.ndarray:
         return torch.mean((preds - labels) ** 2)
     
 
@@ -35,7 +34,7 @@ class MAE(Risk):
     def __init__(self):
         super().__init__()
 
-    def __call__(self, preds: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
+    def __call__(self, features:np.ndarray, preds: np.ndarray, labels: np.ndarray) -> np.ndarray:
         return torch.mean(torch.abs(preds - labels))
     
 
@@ -44,7 +43,7 @@ class Quantile(Risk):
         super().__init__()
         self.q = q
     
-    def __call__(self, preds: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
+    def __call__(self, features:np.ndarray, preds: np.ndarray, labels: np.ndarray) -> np.ndarray:
         """
         Compute the quantile loss.
         @param preds: The predicted values, shape (n_samples, 1).
@@ -56,7 +55,17 @@ class Quantile(Risk):
         return torch.mean(res)
 
 
-
+class RiskFilter(Risk):
+    def __init__(self, risk:Risk, feature_cols:list[str], condition:Callable[[pd.DataFrame], pd.DataFrame]):
+        super().__init__()
+        self.risk = risk
+        self.condition = condition
+        self.feature_cols = feature_cols
+    
+    def __call__(self, features:np.ndarray, preds: np.ndarray, labels: np.ndarray) -> np.ndarray:
+        features_df = pd.DataFrame(features, columns=self.feature_cols)
+        mask = self.condition(features_df)
+        return self.risk(preds[mask], labels[mask])
 
 
 

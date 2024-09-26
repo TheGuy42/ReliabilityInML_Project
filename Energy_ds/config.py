@@ -5,6 +5,7 @@ from dataclasses import dataclass, fields
 from typing import Callable
 from enum import Enum
 
+
 class REGION(Enum):
     AEP = 1
     COMED = 2

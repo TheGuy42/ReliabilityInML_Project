@@ -87,7 +87,7 @@ class EnergyDataset(Dataset):
                  ):
         self.data_path:list[str] = data_path if isinstance(data_path, list) else [data_path]
         self.config:DatasetConfig = config if config is not None else DatasetConfig()
-        self.data = None
+        self.features = None
         self.labels = None
 
         self.features_df:pd.DataFrame = None
@@ -125,7 +125,7 @@ class EnergyDataset(Dataset):
         self.labels_df = labels[mask].copy().reset_index(drop=True)
         
         # Convert the dataframes to tensors and apply the condition and transform functions
-        self.data = self.to_numpy(self.features_df)
+        self.features = self.to_numpy(self.features_df)
         self.labels = self.to_numpy(self.labels_df)
 
         # self.data, self.labels = self.transform_to_sequence(self.data, self.labels)
@@ -146,10 +146,10 @@ class EnergyDataset(Dataset):
         return transformed_data, transformed_labels
     
     def __len__(self):
-        return len(self.data)
+        return len(self.features)
     
     def __getitem__(self, idx):
-        return self.data[idx], self.labels[idx]
+        return self.features[idx], self.labels[idx]
 
     @staticmethod
     def to_numpy(data: pd.DataFrame,
