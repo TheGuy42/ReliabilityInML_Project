@@ -187,14 +187,15 @@ class Hypothesis:
 
         return df
     
-    def plot(self) -> plt.Axes:
-        fig, axes = plt.subplots(1, 1, figsize=(12, 6))
-        fig.set_dpi(200)
+    def plot(self, ax:plt.Axes=None, **kwargs) -> plt.Axes:
+        if ax is None:
+            fig, ax = plt.subplots(1, 1, dpi=200, **kwargs)
+            # fig.set_dpi(200)
 
         df = self.to_dataframe()
 
         # g = sns.relplot(data=df, x='time', y=df.columns, hue=df.columns, ax=axes)
-        g = sns.lineplot(data=df, x='time', y='risk_seq', ax=axes, label='Risk Sequence')
+        g = sns.lineplot(data=df, x='time', y='risk_seq', ax=ax, label='Risk Sequence')
 
         diff =  (df['target_lower_cs'] - df['source_upper_bound'])
         g.fill_between(df['time'], df['target_lower_cs'], df['source_upper_bound'], where=diff > 0, alpha=0.35, color='green', label='Confidence Interval - H rejected', zorder=10)
@@ -202,13 +203,13 @@ class Hypothesis:
         
         emp_source_mean = self.source_bound._risk_seq.mean()
         emp_target_mean = self.target_bound._risk_seq.cumsum() / np.arange(1, self.target_bound._risk_seq.shape[0]+1)
-        sns.lineplot(x=df['time'], y=emp_target_mean, color='black', label='Empirical Target Mean', zorder=10, linestyle='--', ax=axes)
+        sns.lineplot(x=df['time'], y=emp_target_mean, color='black', label='Empirical Target Mean', zorder=10, linestyle='--', ax=ax)
         g.hlines(emp_source_mean, 0, df['time'].max(), color='black', label='Empirical Source Mean', zorder=10, linestyle='-.')
 
         # g.set_title(f"Confidence Interval; Tolerance Level: {self.tolerance}")
         g.set_xlabel("Time")
         g.set_ylabel("Risk")
-        g.legend()
+        # g.legend()
         # plt.show()
         return g
 

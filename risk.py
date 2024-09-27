@@ -20,6 +20,9 @@ class Risk:
 
     def __call__(self, features:np.ndarray, preds: np.ndarray, labels: np.ndarray) -> np.ndarray:
         raise NotImplementedError("Risk class must implement a __call__ method")
+    
+    def __str__(self):
+        return self.__class__.__name__
 
 
 class MSE(Risk):
@@ -53,6 +56,12 @@ class Quantile(Risk):
         """
         res = np.maximum(self.q * (labels - preds), (self.q - 1) * (labels - preds))
         return np.mean(res)
+    
+    def __str__(self):
+        return f"Quantile({self.q})"
+    
+    def __repr__(self):
+        return f"Quantile({self.q})"
 
 
 class RiskFilter(Risk):
@@ -65,7 +74,10 @@ class RiskFilter(Risk):
     def __call__(self, features:np.ndarray, preds: np.ndarray, labels: np.ndarray) -> np.ndarray:
         features_df = pd.DataFrame(features, columns=self.feature_cols)
         mask = self.condition(features_df)
-        return self.risk(preds[mask], labels[mask])
+        filtered_preds, filtered_labels = preds[mask], labels[mask]
+        if len(filtered_preds) == 0:
+            return np.nan
+        return self.risk(filtered_preds, filtered_labels)
 
 
 
