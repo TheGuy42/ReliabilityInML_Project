@@ -105,13 +105,17 @@ class EnergyDataset(Dataset):
         labels = data[self.target_col].copy()
 
         # Add past_hours labels as columns to the features dataframe
-        for i in range(1, self.config.past_window + 1):
-            col = f'MW_at_-{i}H'
-            features[col] = labels.shift(i)
+        if self.config.past_hours is not None:
+            for i in self.config.past_hours:
+                col = f'MW_at_-{i}H'
+                features[col] = labels.shift(i)
 
         # Drop rows with NaN values that were created by the shift operation
-        features.dropna(inplace=True, ignore_index=True)
-        labels = labels[self.config.past_window:].reset_index(drop=True)
+        
+        features = features[max(self.config.past_hours+[0]):].reset_index(drop=True)
+        labels = labels[max(self.config.past_hours+[0]):].reset_index(drop=True)
+        # features.dropna(inplace=True, ignore_index=True)
+        # labels = labels[max(self.config.past_hours):].reset_index(drop=True)
 
         mask = self.config.conditions(features)
         # if condition is not None:

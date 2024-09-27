@@ -47,9 +47,13 @@ class ConfSeq:
         """
         update the confidence interval bounds given a new input x.
         """
-        if isinstance(x, float):
+        if not isinstance(x, np.ndarray):
             x = np.asanyarray([x])
-        assert all(x >= self.min_val) and all(x <= self.max_val), f"Input x must be in the range [{self.min_val}, {self.max_val}]"
+        in_bounds = all(x >= self.min_val) and all(x <= self.max_val)
+        if not in_bounds:
+            print(f"WARNING::Input x out of bounds [{self.min_val}, {self.max_val}], given x={x}")
+            print(f"Clipping x to [{self.min_val}, {self.max_val}]")
+            x = x.clip(self.min_val, self.max_val)
         
         self._risk_seq = self._append_seq(x, self._risk_seq)
 
@@ -207,7 +211,7 @@ class Hypothesis:
         g.hlines(emp_source_mean, 0, df['time'].max(), color='black', label='Empirical Source Mean', zorder=10, linestyle='-.')
 
         # g.set_title(f"Confidence Interval; Tolerance Level: {self.tolerance}")
-        g.set_xlabel("Time")
+        g.set_xlabel("Step")
         g.set_ylabel("Risk")
         # g.legend()
         # plt.show()
@@ -227,6 +231,14 @@ class Hypothesis:
         if target:
             self.target_bound.reset()
             self.target_lower_cs = None
+    
+    def set_bounds(self, min_val:float, max_val:float, source:bool=True, target:bool=True):
+        if source:
+            self.source_bound.max_val = max_val
+            self.source_bound.min_val = min_val
+        if target:
+            self.target_bound.max_val = max_val
+            self.target_bound.min_val = min_val
 
 
 class Algorithm:

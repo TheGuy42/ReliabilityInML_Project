@@ -36,7 +36,7 @@ class SEASON(Enum):
 
 @dataclass
 class DatasetConfig:
-    past_window: int = 0 # number of past hours included with each sample
+    past_hours: list[int] = None # number of past hours included with each sample
     region: list[REGION] = None # region to include in the dataset
     years: tuple[int, int] = None # start and end years to include in the dataset [)
     season: list[SEASON]|SEASON = None # season to include in the dataset
@@ -62,6 +62,15 @@ class DatasetConfig:
             conds.append(day_cond(self.days))
 
         return cond_and(conds)
+    
+    def __str__(self):
+        string = "ds_config:"
+        for field in fields(self):
+            name = field.name
+            value = getattr(self, name)
+            if value is not None:
+                string += f"{name}={value}, "
+        return string
 
 def year_cond(start:int, end:int):
     return lambda data: data['Year'].between(start, end, inclusive='left')

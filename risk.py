@@ -65,21 +65,23 @@ class Quantile(Risk):
 
 
 class RiskFilter(Risk):
-    def __init__(self, risk:Risk, feature_cols:list[str], condition:Callable[[pd.DataFrame], pd.DataFrame]):
+    def __init__(self, risk:Risk, feature_cols:list[str], condition:Callable[[pd.DataFrame], pd.DataFrame], name:str=''):
         super().__init__()
         self.risk = risk
         self.condition = condition
         self.feature_cols = feature_cols
+        self.name = name
     
     def __call__(self, features:np.ndarray, preds: np.ndarray, labels: np.ndarray) -> np.ndarray:
         features_df = pd.DataFrame(features, columns=self.feature_cols)
         mask = self.condition(features_df)
-        filtered_preds, filtered_labels = preds[mask], labels[mask]
+        filtered_features, filtered_preds, filtered_labels = features[mask], preds[mask], labels[mask]
         if len(filtered_preds) == 0:
             return np.nan
-        return self.risk(filtered_preds, filtered_labels)
+        return self.risk(filtered_features, filtered_preds, filtered_labels)
 
-
+    def __str__(self):
+        return f"RiskFilter:{self.name}"
 
 
 
