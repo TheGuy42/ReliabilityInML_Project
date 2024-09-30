@@ -51,17 +51,17 @@ class DatasetConfig:
     def conditions(self):
         conds = []
         if self.region is not None:
-            conds.append(region_cond(self.region))
+            conds.append(self.region_cond(self.region))
         if self.years is not None:
-            conds.append(year_cond(*self.years))
+            conds.append(self.year_cond(*self.years))
         if self.season is not None:
-            conds.append(season_cond(self.season))
+            conds.append(self.season_cond(self.season))
         if self.months is not None:
-            conds.append(month_cond(self.months))
+            conds.append(self.month_cond(self.months))
         if self.days is not None:
-            conds.append(day_cond(self.days))
+            conds.append(self.day_cond(self.days))
 
-        return cond_and(conds)
+        return self.cond_and(conds)
     
     def __str__(self):
         string = "ds_config:"
@@ -72,29 +72,35 @@ class DatasetConfig:
                 string += f"{name}={value}, "
         return string
 
-def year_cond(start:int, end:int):
-    return lambda data: data['Year'].between(start, end, inclusive='left')
+    @staticmethod
+    def year_cond(start:int, end:int):
+        return lambda data: data['Year'].between(start, end, inclusive='left')
 
-def season_cond(seasons:list[SEASON]):
-    return lambda data: data['Season'].isin([s.value for s in seasons])
+    @staticmethod
+    def season_cond(seasons:list[SEASON]):
+        return lambda data: data['Season'].isin([s.value for s in seasons])
 
-def month_cond(months:list[int]):
-    return lambda data: data['Month'].isin(months)
+    @staticmethod
+    def month_cond(months:list[int]):
+        return lambda data: data['Month'].isin(months)
 
-def day_cond(days:list[int]):
-    return lambda data: data['Day'].isin(days)
+    @staticmethod
+    def day_cond(days:list[int]):
+        return lambda data: data['Day'].isin(days)
 
-def cond_and(conds:list):
-    def cond(data):
-        mask = pd.Series(len(data)*[True])
-        for c in conds:
-            mask = mask & c(data)
-        return mask
-    # return lambda data: ([cond(data) for cond in conds])
-    return cond
+    @staticmethod
+    def cond_and(conds:list):
+        def cond(data):
+            mask = pd.Series(len(data)*[True])
+            for c in conds:
+                mask = mask & c(data)
+            return mask
+        # return lambda data: ([cond(data) for cond in conds])
+        return cond
 
-def region_cond(regions:list[REGION]):
-    return lambda data: data['Region'].isin([r.value for r in regions])
+    @staticmethod
+    def region_cond(regions:list[REGION]):
+        return lambda data: data['Region'].isin([r.value for r in regions])
 
 
 

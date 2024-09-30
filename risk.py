@@ -81,7 +81,7 @@ class RiskFilter(Risk):
         return self.risk(filtered_features, filtered_preds, filtered_labels)
 
     def __str__(self):
-        return f"RiskFilter:{self.name}"
+        return f"RiskFilter({self.risk}, {self.name})"
 
 
 

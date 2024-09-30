@@ -47,6 +47,7 @@ class DataPrep:
 
         # Extract year, day, hour, and week number
         data['Year'] = data['Datetime'].dt.year
+        data['Month'] = data['Datetime'].dt.month
         data['Day'] = data['Datetime'].dt.day
         data['Hour'] = data['Datetime'].dt.hour
         data['Week_Number'] = data['Datetime'].dt.isocalendar().week
@@ -76,7 +77,7 @@ class DataPrep:
     
 
 class EnergyDataset(Dataset):
-    feature_cols = ['Region', 'Year', 'Day', 'Hour', 'Week_Number', 'Season'] # columns after DataPrep(), additional features may be added here
+    feature_cols = ['Region', 'Year', 'Month', 'Day', 'Hour', 'Week_Number', 'Season'] # columns after DataPrep(), additional features may be added here
     target_col = 'MW'
 
     def __init__(self, 
@@ -110,12 +111,11 @@ class EnergyDataset(Dataset):
                 col = f'MW_at_-{i}H'
                 features[col] = labels.shift(i)
 
-        # Drop rows with NaN values that were created by the shift operation
-        
-        features = features[max(self.config.past_hours+[0]):].reset_index(drop=True)
-        labels = labels[max(self.config.past_hours+[0]):].reset_index(drop=True)
-        # features.dropna(inplace=True, ignore_index=True)
-        # labels = labels[max(self.config.past_hours):].reset_index(drop=True)
+            # Drop rows with NaN values that were created by the shift operation
+            features = features[max(self.config.past_hours+[0]):].reset_index(drop=True)
+            labels = labels[max(self.config.past_hours+[0]):].reset_index(drop=True)
+            # features.dropna(inplace=True, ignore_index=True)
+            # labels = labels[max(self.config.past_hours):].reset_index(drop=True)
 
         mask = self.config.conditions(features)
         # if condition is not None:

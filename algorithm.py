@@ -119,11 +119,15 @@ class ConfSeq:
 
     def coverage(self) -> float:
         """
-        Calculate the coverage of the confidence interval.
+        Calculate the coverage of the confidence interval over empirical mean of the risk.
         """
-        return np.mean((self.lower <= self._risk_seq) & (self._risk_seq <= self.upper))
+        emp_mean = self._risk_seq.cumsum() / np.arange(1, self._risk_seq.shape[0]+1)
+        return np.mean((self.lower <= emp_mean) & (emp_mean <= self.upper))
     
     def reset(self):
+        """
+        Reset the confidence sequence and intervals.
+        """
         self._risk_seq = None
         self._lower_cs = None
         self._upper_cs = None
@@ -225,6 +229,9 @@ class Hypothesis:
         return np.mean((self.target_lower <= risk_seq) & (risk_seq <= self.source_upper))
 
     def reset(self, source:bool=True, target:bool=True):
+        """
+        Reset the confidence sequences of the source or target.
+        """
         if source:
             self.source_bound.reset()
             self.source_upper_cs = None
