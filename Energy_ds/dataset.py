@@ -72,7 +72,8 @@ class DataPrep:
     
     @staticmethod
     def concat_data(*data_frames: tuple[pd.DataFrame]) -> pd.DataFrame:
-        data = pd.concat(data_frames, ignore_index=True)
+        data:pd.DataFrame = pd.concat(data_frames, ignore_index=True)
+        data.sort_values(by=['Datetime', 'Region'], inplace=True)
         return data
     
 
@@ -83,9 +84,12 @@ class EnergyDataset(Dataset):
     def __init__(self, 
                  data_path: str | list[str],
                  config: DatasetConfig = None,
+                 batch_size: int = 1,
                 #  condition: pd.DataFrame | Callable[[pd.DataFrame], pd.DataFrame] = None,
                  transform: Callable[[pd.DataFrame], pd.DataFrame] = None,
                  ):
+        self.current_idx = 0
+
         self.data_path:list[str] = data_path if isinstance(data_path, list) else [data_path]
         self.config:DatasetConfig = config if config is not None else DatasetConfig()
         self.features = None
@@ -94,6 +98,7 @@ class EnergyDataset(Dataset):
         self.features_df:pd.DataFrame = None
         self.labels_df:pd.DataFrame = None
         self.prepare_data(transform=transform)
+        self.batch_size = batch_size * len(self.features_df['Region'].unique())
 
     def prepare_data(self,
                     #  condition: pd.DataFrame | Callable[[pd.DataFrame], pd.DataFrame] = None,
@@ -149,12 +154,6 @@ class EnergyDataset(Dataset):
         
         return transformed_data, transformed_labels
     
-    def __len__(self):
-        return len(self.features)
-    
-    def __getitem__(self, idx):
-        return self.features[idx], self.labels[idx]
-
     @staticmethod
     def to_numpy(data: pd.DataFrame,
                   condition: pd.DataFrame | Callable[[pd.DataFrame], pd.DataFrame] = None,
@@ -174,6 +173,29 @@ class EnergyDataset(Dataset):
         return data
         # return torch.from_numpy(data)
 
+    def __len__(self):
+        return len(self.features)
+    
+    def __getitem__(self, idx):
+        return self.features[idx], self.labels[idx]
+
+    def __iter__(self):
+        self.current_idx = 0
+        return self
+
+    def __next__(self):
+        if self.current_idx >= len(self.features):
+            raise StopIteration
+
+        end_idx = min(self.current_idx + self.batch_size, len(self.features))
+        batch_features = self.features[self.current_idx:end_idx]
+        batch_labels = self.labels[self.current_idx:end_idx]
+        self.current_idx = end_idx
+
+        return batch_features, batch_labels
+        
+    def set_batch_size(self, batch_size:int):
+        self.batch_size = batch_size * len(self.features_df['Region'].unique())
 
 
 

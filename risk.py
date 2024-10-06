@@ -75,9 +75,10 @@ class RiskFilter(Risk):
     def __call__(self, features:np.ndarray, preds: np.ndarray, labels: np.ndarray) -> np.ndarray:
         features_df = pd.DataFrame(features, columns=self.feature_cols)
         mask = self.condition(features_df)
-        filtered_features, filtered_preds, filtered_labels = features[mask], preds[mask], labels[mask]
-        if len(filtered_preds) == 0:
+        if mask is False:
             return np.nan
+        
+        filtered_features, filtered_preds, filtered_labels = features[mask], preds[mask], labels[mask]
         return self.risk(filtered_features, filtered_preds, filtered_labels)
 
     def __str__(self):

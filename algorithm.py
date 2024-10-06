@@ -43,19 +43,24 @@ class ConfSeq:
         """
         raise NotImplementedError("Bound class must implement _update_bounds method")
 
-    def update(self, x:np.ndarray|float) -> tuple[np.ndarray, np.ndarray]:
+    def update(self, x:np.ndarray|float|None=None) -> tuple[np.ndarray, np.ndarray]:
         """
         update the confidence interval bounds given a new input x.
         """
-        if not isinstance(x, np.ndarray):
-            x = np.asanyarray([x])
-        in_bounds = all(x >= self.min_val) and all(x <= self.max_val)
-        if not in_bounds:
-            print(f"WARNING::Input x out of bounds [{self.min_val}, {self.max_val}], given x={x}")
-            print(f"Clipping x to [{self.min_val}, {self.max_val}]")
-            x = x.clip(self.min_val, self.max_val)
+        # if not isinstance(x, np.ndarray):
+        #     x = np.asanyarray([x])
+        # in_bounds = all(x >= self.min_val) and all(x <= self.max_val)
+        # if not in_bounds:
+        #     print(f"WARNING::Input x out of bounds [{self.min_val}, {self.max_val}], given x={x}")
+        #     print(f"Clipping x to [{self.min_val}, {self.max_val}]")
+        #     x = x.clip(self.min_val, self.max_val)
         
-        self._risk_seq = self._append_seq(x, self._risk_seq)
+        # self._risk_seq = self._append_seq(x, self._risk_seq)
+        if x is not None:
+            self.append(x)
+        
+        if self._risk_seq is None:
+            return None, None
 
         max_val = self.max_val if np.isfinite(self.max_val) else self._risk_seq.max()
         min_val = self.min_val if np.isfinite(self.min_val) else self._risk_seq.min()
@@ -70,6 +75,20 @@ class ConfSeq:
 
         return self.lower, self.upper
     
+    def append(self, x:np.ndarray|float):
+        """
+        Append the input x to the risk sequence.
+        """
+        if not isinstance(x, np.ndarray):
+            x = np.asanyarray([x])
+        in_bounds = all(x >= self.min_val) and all(x <= self.max_val)
+        if not in_bounds:
+            print(f"WARNING::Input x out of bounds [{self.min_val}, {self.max_val}], given x={x}")
+            print(f"Clipping x to [{self.min_val}, {self.max_val}]")
+            x = x.clip(self.min_val, self.max_val)
+        
+        self._risk_seq = self._append_seq(x, self._risk_seq)
+
     def _append_seq(self, x:np.ndarray|float, seq:np.ndarray) -> np.ndarray:
         """
         append the input x to the sequence.
@@ -150,8 +169,17 @@ class Hypothesis:
         return self.source_upper_cs
 
     def calc_target_lower_cs(self, x:np.ndarray) -> np.ndarray:
-        self.target_lower_cs = self.target_bound.update(x)[0]
+        lower_bound = self.target_bound.update(x)[0]
+        self.target_lower_cs = lower_bound
         return self.target_lower_cs
+        # if lower_bound is None:
+        #     return self.target_lower_cs
+    
+        # if self.target_lower_cs is None:
+        #     self.target_lower_cs = lower_bound[-1:]
+        # else:
+        #     self.target_lower_cs = np.concatenate((self.target_lower_cs, lower_bound[-1:]), axis=0)
+        # return self.target_lower_cs
 
     @property
     def source_upper(self) -> np.ndarray:
@@ -161,18 +189,35 @@ class Hypothesis:
     def target_lower(self) -> np.ndarray:
         raise NotImplementedError("Hypothesis class must implement target_lower property")
     
-    def test(self, x:np.ndarray) -> bool:
+    def test(self, x:np.ndarray|None=None) -> bool:
         """
         Given a new input x, update the bounds and return weather the hypothesis is satisfied (within the tolerance).
         Parameters:
-            x (np.ndarray): The input array.
+            x (np.ndarray): The input array or None if the bounds should be updated without adding new observations.
         Returns:
             bool: The result of the function call.
         """
+        
         self.calc_target_lower_cs(x)
+        if self.source_upper_cs is None or self.target_lower_cs is None:
+            return True
+        
         if self.target_lower[-1] > self.source_upper:
             return False
         return True
+    
+    def add_observations(self, x:np.ndarray|float, to_target:bool):
+        """
+        Add observations to the source or target bound.
+        Parameters:
+            x (np.ndarray|float): The new observations.
+            to_target (bool): Add the observations to the target bound if True, else add to the source bound.
+        """
+        if to_target:
+            self.target_bound.append(x)
+        else:
+            self.source_bound.append(x)
+        
     
     def to_dataframe(self) -> pd.DataFrame:
         df = pd.DataFrame(columns=["risk_seq", "source_upper_bound", "target_lower_cs"])
@@ -191,7 +236,6 @@ class Hypothesis:
         # target bound
         df['target_bound'] = self.target_bound.name
         df['target_confidence'] = self.target_bound.conf_lvl
-
 
         return df
     
@@ -248,20 +292,6 @@ class Hypothesis:
             self.target_bound.min_val = min_val
 
 
-class Algorithm:
-    """Algorithm
-    This is a base class that represents an algorithm.
-    It may be usefull to test multiple Hypothesis simultaneously.
-    It may not be needed...
-
-    parameters:
-        hypothesis (dict[str, Hypothesis]): A dictionary of hypothesis to test.
-    """
-    def __init__(self, hypothesis:dict[str, Hypothesis]):
-        self.hypothesis:dict[str, Hypothesis] = hypothesis
-
-    def update(self, x:np.ndarray) -> bool:
-        pass
 
 
 
